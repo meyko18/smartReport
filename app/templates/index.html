@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confluence 智能报告助手</title>
+    
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --secondary-color: #6366f1;
+            --secondary-hover: #4f46e5;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --border-color: #e2e8f0;
+            --border-hover: #cbd5e1;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --transition: all 0.2s ease-in-out;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* 侧边栏样式 */
+        .sidebar {
+            width: 360px;
+            background-color: var(--card-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 32px 24px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            flex-shrink: 0;
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary-color);
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 8px;
+            transition: var(--transition);
+        }
+
+        input[type="text"], 
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            background: #fff;
+            transition: var(--transition);
+            font-family: inherit;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        input:hover, select:hover {
+            border-color: var(--border-hover);
+        }
+
+        button.btn-primary {
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 16px;
+            transition: var(--transition);
+            font-family: inherit;
+            box-shadow: var(--shadow-sm);
+        }
+
+        button.btn-primary:hover {
+            background-color: var(--primary-hover);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+        
+        button.btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background-color: #cbd5e1;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .helper-text {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
+        /* 分隔线 */
+        hr {
+            border: 0;
+            border-top: 1px solid var(--border-color);
+            margin: 24px 0;
+            opacity: 0.7;
+        }
+
+        /* 主内容区 */
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+
+        .report-container {
+            max-width: 900px;
+            width: 100%;
+            background: var(--card-bg);
+            padding: 48px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            min-height: 300px;
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+            box-sizing: border-box;
+            transition: var(--transition);
+        }
+        
+        .report-container:hover {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        /* 确保报告内容不会超出容器 */
+        .report-body {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .report-body * {
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* 状态样式 */
+        .empty-state, .loading-state {
+            text-align: center;
+            color: var(--text-sub);
+            margin: 80px auto;
+            max-width: 500px;
+        }
+        
+        .empty-state h3, .loading-state h3 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+        
+        .empty-state p, .loading-state p {
+            font-size: 16px;
+            color: var(--text-sub);
+            margin-top: 0;
+        }
+        
+        .loading-state {
+            display: none;
+        }
+
+        .spinner {
+            border: 4px solid #f1f5f9;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 24px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Markdown渲染后的样式 */
+        .report-body {
+            display: none;
+        }
+        
+        .report-body h1 {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-top: 0;
+            margin-bottom: 24px;
+            border-bottom: 3px solid var(--border-color);
+            padding-bottom: 12px;
+        }
+        
+        .report-body h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-top: 32px;
+            margin-bottom: 16px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        
+        .report-body h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-top: 24px;
+            margin-bottom: 12px;
+        }
+        
+        .report-body p {
+            font-size: 16px;
+            line-height: 1.8;
+            color: var(--text-main);
+            margin-bottom: 16px;
+        }
+        
+        .report-body ul, .report-body ol {
+            padding-left: 28px;
+            margin-bottom: 16px;
+        }
+        
+        .report-body li {
+            margin-bottom: 8px;
+            font-size: 16px;
+            line-height: 1.7;
+            color: var(--text-main);
+        }
+        
+        .report-body ul li::marker {
+            color: var(--primary-color);
+        }
+        
+        .report-body strong {
+            font-weight: 600;
+            color: var(--text-main);
+        }
+        
+        .report-body em {
+            font-style: italic;
+            color: var(--text-sub);
+        }
+        
+        .report-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 24px 0;
+            font-size: 15px;
+        }
+        
+        .report-body th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: var(--text-main);
+            padding: 12px 16px;
+            text-align: left;
+            border: 1px solid var(--border-color);
+        }
+        
+        .report-body td {
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+        
+        .report-body tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        
+        .report-body a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        
+        .report-body a:hover {
+            color: var(--primary-hover);
+            text-decoration: underline;
+        }
+        
+        /* 状态消息样式 */
+        #statusMsg {
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--text-sub);
+            text-align: center;
+            transition: var(--transition);
+        }
+        
+        /* 导出按钮样式 */
+        #exportButtons {
+            display: none;
+            margin-bottom: 24px;
+            text-align: right;
+        }
+        
+        #exportButtons button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: inherit;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        #exportButtons button:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+        
+        #exportButtons button:active {
+            transform: translateY(0);
+        }
+        
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+        <div class="logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            SmartReport
+        </div>
+
+        <!-- 认证方式切换 -->
+        <div class="form-group">
+            <label>认证方式</label>
+            <select id="authType" onchange="toggleAuthFields()">
+                <option value="basic">账号 + 密码</option>
+                <option value="token">Bearer Token (令牌)</option>
+            </select>
+        </div>
+
+        <!-- Basic Auth -->
+        <div id="basicAuthGroup">
+            <div class="form-group">
+                <label>用户名</label>
+                <input type="text" id="username" placeholder="domain\user 或 email">
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" id="password" placeholder="********">
+            </div>
+        </div>
+
+        <!-- Token Auth -->
+        <div id="tokenAuthGroup" style="display: none;">
+            <div class="form-group">
+                <label>Token</label>
+                <input type="password" id="token" placeholder="输入 Token 字符串...">
+                <div class="helper-text">无需 "Bearer " 前缀，系统自动添加</div>
+            </div>
+        </div>
+
+        <hr style="border:0; border-top:1px solid #e5e7eb; margin: 20px 0;">
+
+        <!-- 提取模式 -->
+        <div class="form-group">
+            <label>提取模式</label>
+            <select id="mode" onchange="toggleInputLabel()">
+                <option value="single">仅指定页面 ID (单页)</option>
+                <option value="url">基于父页面 ID (递归子页)</option>
+                <option value="search">基于全站搜索</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label id="targetLabel">目标页面 ID</label>
+            <input type="text" id="targetValue" placeholder="例如: 123456">
+        </div>
+
+        <div class="form-group">
+            <label>关键词</label>
+            <input type="text" id="keyword" placeholder="例如: 性能优化, 2023年度" style="min-height: 48px; font-size: 16px; padding: 12px 14px;">
+            <div class="helper-text">提取与关键词相关的所有内容</div>
+        </div>
+        
+        <div class="form-group">
+            <label>AI扩展指令</label>
+            <textarea id="aiExtension" placeholder="例如: 重点关注性能数据，按照时间顺序整理" style="width: 100%; min-height: 80px; font-size: 14px; padding: 12px 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); resize: vertical;"></textarea>
+            <div class="helper-text">可选，用于指导AI生成报告的扩展要求</div>
+        </div>
+
+        <button class="btn-primary" id="generateBtn" onclick="generateReport()">生成智能报告</button>
+        <div id="statusMsg" style="margin-top:10px; font-size:12px; color:#6b7280; text-align:center;"></div>
+    </div>
+
+    <!-- 主展示区 -->
+    <div class="main-content">
+        <div class="report-container">
+            <!-- 状态1: 空状态 -->
+            <div id="emptyState" class="empty-state">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#e5e7eb" stroke-width="1.5">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+                <h3>准备就绪</h3>
+                <p>配置左侧参数，通过 AI 提取并分析 Confluence 内容</p>
+            </div>
+
+            <!-- 状态2: 加载中 -->
+            <div id="loadingState" class="loading-state">
+                <div class="spinner"></div>
+                <h3>AI 正在分析中...</h3>
+                <p id="progressMessage">正在连接 Confluence 爬取数据并生成报告</p>
+                <!-- 自定义进度条组件 -->
+            <div class="progress-container" style="margin: 24px 0;">
+                <div class="progress-wrapper">
+                    <div class="progress-bar-container">
+                        <div id="progressBar" class="progress-bar" style=""></div>
+                        <div class="progress-text"><span id="progressPercentage">0</span>%</div>
+                    </div>
+                    <div id="progressDetails" class="progress-details"></div>
+                </div>
+            </div>
+            <style>
+                /* 进度条组件样式 */
+                .progress-container {
+                    width: 100%;
+                    font-family: inherit;
+                }
+                
+                .progress-wrapper {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                }
+                
+                .progress-bar-container {
+                    position: relative;
+                    width: 100%;
+                    height: 12px;
+                    background-color: #f1f5f9;
+                    border-radius: 6px;
+                    overflow: hidden;
+                    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+                }
+                
+                .progress-bar {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    height: 100%;
+                    width: 0%;
+                    background: linear-gradient(90deg, #3b82f6 0%, #6366f1 100%);
+                    border-radius: 6px;
+                    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+                    animation: progressAnimation 0.3s ease-out;
+                }
+                
+                @keyframes progressAnimation {
+                    0% {
+                        transform: scaleX(0);
+                        transform-origin: left;
+                    }
+                    100% {
+                        transform: scaleX(1);
+                        transform-origin: left;
+                    }
+                }
+                
+                .progress-text {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    font-size: 8px;
+                    font-weight: 600;
+                    color: white;
+                    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+                    user-select: none;
+                }
+                
+                .progress-details {
+                    font-size: 14px;
+                    color: #64748b;
+                    text-align: center;
+                    line-height: 1.4;
+                }
+                
+                /* 响应式设计 */
+                @media (max-width: 768px) {
+                    .progress-bar-container {
+                        height: 10px;
+                    }
+                    
+                    .progress-text {
+                        font-size: 7px;
+                    }
+                    
+                    .progress-details {
+                        font-size: 13px;
+                    }
+                }
+                
+                /* 动画效果增强 */
+                .progress-bar::after {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+                    animation: progressShine 1.5s infinite;
+                }
+                
+                @keyframes progressShine {
+                    0% {
+                        transform: translateX(-100%);
+                    }
+                    100% {
+                        transform: translateX(100%);
+                    }
+                }
+            </style>
+            </div>
+
+            <!-- 导出按钮区域 -->
+            <div id="exportButtons" style="display: none; margin-bottom: 20px; text-align: right;">
+                <button onclick="exportMarkdown()" style="margin-right: 10px; padding: 8px 16px; background-color: #4f46e5; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                    📄 导出 Markdown
+                </button>
+                <button onclick="exportPDF()" style="padding: 8px 16px; background-color: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                    📑 导出 PDF
+                </button>
+            </div>
+            
+            <!-- 状态3: 结果展示 -->
+            <div id="reportResult" class="report-body"></div>
+        </div>
+    </div>
+
+    <script>
+        // 切换认证输入框
+        function toggleAuthFields() {
+            const authType = document.getElementById('authType').value;
+            const basicGroup = document.getElementById('basicAuthGroup');
+            const tokenGroup = document.getElementById('tokenAuthGroup');
+
+            if (authType === 'token') {
+                basicGroup.style.display = 'none';
+                tokenGroup.style.display = 'block';
+            } else {
+                basicGroup.style.display = 'block';
+                tokenGroup.style.display = 'none';
+            }
+        }
+
+        // 切换模式提示语
+        function toggleInputLabel() {
+            const mode = document.getElementById('mode').value;
+            const label = document.getElementById('targetLabel');
+            const input = document.getElementById('targetValue');
+            
+            if (mode === 'single') {
+                label.innerText = '目标页面 ID';
+                input.placeholder = '例如: 123456 (仅处理此页)';
+            } else if (mode === 'url') {
+                label.innerText = '父页面 ID';
+                input.placeholder = '例如: 123456 (包含所有子页)';
+            } else {
+                label.innerText = '搜索关键词 (CQL)';
+                input.placeholder = '例如: title ~ "周报"';
+            }
+        }
+        
+        
+        // 显示导出按钮
+        function showExportButtons() {
+            document.getElementById('exportButtons').style.display = 'block';
+        }
+        
+        // 隐藏导出按钮
+        function hideExportButtons() {
+            document.getElementById('exportButtons').style.display = 'none';
+        }
+        
+        // 进度条组件类
+        class ProgressBar {
+            constructor(options = {}) {
+                this.progressBar = document.getElementById(options.barId || 'progressBar');
+                this.percentageElement = document.getElementById(options.percentageId || 'progressPercentage');
+                this.detailsElement = document.getElementById(options.detailsId || 'progressDetails');
+                this.min = options.min || 0;
+                this.max = options.max || 100;
+                this.current = this.min;
+                this.isCompleted = false;
+                this.onComplete = options.onComplete || null;
+                this.color = options.color || '';
+                this.height = options.height || '';
+                this.borderRadius = options.borderRadius || '';
+                this.borderStyle = options.borderStyle || '';
+                
+                this._initStyles();
+            }
+            
+            _initStyles() {
+                if (this.color) {
+                    this.progressBar.style.background = this.color;
+                }
+                if (this.height) {
+                    this.progressBar.parentElement.style.height = this.height;
+                    this.progressBar.style.height = '100%';
+                }
+                if (this.borderRadius) {
+                    this.progressBar.parentElement.style.borderRadius = this.borderRadius;
+                    this.progressBar.style.borderRadius = this.borderRadius;
+                }
+                if (this.borderStyle) {
+                    this.progressBar.parentElement.style.border = this.borderStyle;
+                }
+            }
+            
+            set(value) {
+                if (!this.isCompleted) {
+                    this.current = Math.max(this.min, Math.min(this.max, value));
+                    const percentage = Math.round(((this.current - this.min) / (this.max - this.min)) * 100);
+                    
+                    this.progressBar.style.width = percentage + '%';
+                    if (this.percentageElement) {
+                        this.percentageElement.textContent = percentage;
+                    }
+                    
+                    if (this.current >= this.max) {
+                        this.isCompleted = true;
+                        if (this.onComplete) {
+                            setTimeout(() => this.onComplete(), 300);
+                        }
+                    }
+                }
+                
+                return this;
+            }
+            
+            increment(value = 1) {
+                return this.set(this.current + value);
+            }
+            
+            decrement(value = 1) {
+                return this.set(this.current - value);
+            }
+            
+            reset() {
+                this.current = this.min;
+                this.isCompleted = false;
+                this.progressBar.style.width = '0%';
+                if (this.percentageElement) {
+                    this.percentageElement.textContent = '0';
+                }
+                return this;
+            }
+            
+            setDetails(text) {
+                if (this.detailsElement) {
+                    this.detailsElement.textContent = text;
+                }
+                return this;
+            }
+            
+            setMin(value) {
+                this.min = value;
+                this.set(this.current);
+                return this;
+            }
+            
+            setMax(value) {
+                this.max = value;
+                this.set(this.current);
+                return this;
+            }
+            
+            setColor(color) {
+                this.color = color;
+                this.progressBar.style.background = color;
+                return this;
+            }
+            
+            setHeight(height) {
+                this.height = height;
+                this.progressBar.parentElement.style.height = height;
+                this.progressBar.style.height = '100%';
+                return this;
+            }
+            
+            setBorderRadius(radius) {
+                this.borderRadius = radius;
+                this.progressBar.parentElement.style.borderRadius = radius;
+                this.progressBar.style.borderRadius = radius;
+                return this;
+            }
+            
+            setBorderStyle(style) {
+                this.borderStyle = style;
+                this.progressBar.parentElement.style.border = style;
+                return this;
+            }
+        }
+        
+        // 导出 Markdown 文档
+        function exportMarkdown() {
+            const reportResult = document.getElementById('reportResult');
+            const markdownContent = reportResult.dataset.markdown;
+            
+            if (!markdownContent) {
+                alert('没有找到可导出的 Markdown 内容');
+                return;
+            }
+            
+            // 创建下载链接
+            const blob = new Blob([markdownContent], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `confluence-report-${new Date().toISOString().slice(0, 10)}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // 导出 PDF 文档
+        function exportPDF() {
+            const reportResult = document.getElementById('reportResult');
+            
+            if (!reportResult.innerHTML) {
+                alert('没有找到可导出的内容');
+                return;
+            }
+            
+            // 使用浏览器打印功能导出 PDF
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <title>Confluence 报告</title>
+                    <style>
+                        body {
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                            line-height: 1.6;
+                            color: #333;
+                            max-width: 900px;
+                            margin: 0 auto;
+                            padding: 20px;
+                        }
+                        h1, h2, h3 {
+                            color: #2563eb;
+                            border-bottom: 1px solid #eee;
+                            padding-bottom: 8px;
+                        }
+                        ul {
+                            padding-left: 20px;
+                        }
+                        li {
+                            margin-bottom: 5px;
+                        }
+                        .report-body {
+                            word-wrap: break-word;
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${reportResult.innerHTML}
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        async function generateReport() {
+            const btn = document.getElementById('generateBtn');
+            const emptyState = document.getElementById('emptyState');
+            const loadingState = document.getElementById('loadingState');
+            const reportResult = document.getElementById('reportResult');
+            const statusMsg = document.getElementById('statusMsg');
+            
+            // 初始化进度条
+            const progressBar = new ProgressBar({
+                min: 0,
+                max: 100,
+                onComplete: () => {
+                    console.log('进度条已完成');
+                }
+            });
+
+            // 1. 获取基础输入
+            const confUrl = "https://space.jaguarmicro.com";
+            const mode = document.getElementById('mode').value;
+            const targetValue = document.getElementById('targetValue').value;
+            const keyword = document.getElementById('keyword').value;
+            const aiExtension = document.getElementById('aiExtension').value;
+            
+            // 2. 获取认证输入
+            const authType = document.getElementById('authType').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const token = document.getElementById('token').value;
+
+            // 3. 校验
+            if (!targetValue) {
+                alert("请填写目标 ID / 搜索条件");
+                return;
+            }
+            if (authType === 'basic' && (!username || !password)) {
+                alert("请填写完整的用户名和密码");
+                return;
+            }
+            if (authType === 'token' && !token) {
+                alert("请填写 Token");
+                return;
+            }
+
+            // 4. 构建 Payload
+            const payload = {
+                confUrl, mode, targetValue, keyword, aiExtension, authType,
+                username: authType === 'basic' ? username : null,
+                password: authType === 'basic' ? password : null,
+                token: authType === 'token' ? token : null
+            };
+
+            // 5. UI 状态更新
+            btn.disabled = true;
+            btn.innerText = "正在处理...";
+            emptyState.style.display = 'none';
+            reportResult.style.display = 'none';
+            loadingState.style.display = 'block';
+            statusMsg.innerText = "正在连接 Confluence...";
+            
+            // 重置并开始进度更新
+            progressBar.reset().setDetails('正在初始化...');
+            
+            try {
+                // 模拟进度更新
+                const progressInterval = setInterval(() => {
+                    progressBar.increment(5);
+                    if (progressBar.current < 30) {
+                        progressBar.setDetails('正在连接 Confluence...');
+                    } else if (progressBar.current < 60) {
+                        progressBar.setDetails('正在爬取页面内容...');
+                    } else if (progressBar.current < 90) {
+                        progressBar.setDetails('正在生成 AI 报告...');
+                    } else {
+                        progressBar.setDetails('正在处理完成...');
+                    }
+                }, 200);
+                
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                // 清除进度更新定时器
+                clearInterval(progressInterval);
+                progressBar.set(100).setDetails('处理完成!');
+                
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    statusMsg.innerText = `完成! 已分析 ${data.processed_count} 个相关页面`;
+                    setTimeout(() => {
+                        loadingState.style.display = 'none';
+                        reportResult.innerHTML = data.report;
+                        reportResult.style.display = 'block';
+                        
+                        // 保存原始Markdown内容，用于导出功能
+                        reportResult.dataset.markdown = data.report_markdown;
+                        
+                        // 显示导出按钮
+                        showExportButtons();
+                    }, 500);
+                } else if (data.status === 'warning') {
+                    statusMsg.innerText = "完成，但结果可能为空";
+                    setTimeout(() => {
+                        loadingState.style.display = 'none';
+                        reportResult.innerHTML = `<p style="color:#d97706">${data.message}</p>`;
+                        reportResult.style.display = 'block';
+                        hideExportButtons();
+                    }, 500);
+                } else {
+                    throw new Error(data.message || "未知错误");
+                }
+            } catch (error) {
+                console.error(error);
+                statusMsg.innerText = "出错了";
+                loadingState.style.display = 'none';
+                emptyState.style.display = 'block';
+                alert("请求失败: " + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "生成智能报告";
+            }
+        }
+    </script>
+</body>
+</html>
